@@ -194,8 +194,8 @@ if __name__ == '__main__':
     
     print("\n*************************Solution for question 1 l *******************************")
     iteration = 10000
-    for b in [[0, 0, 1], [0, 1, 0, 1, 0, 1], [0, 1, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1]]:
-        print(p_j_alpha_given_b(b, iteration))
+    for i, b in enumerate([[0, 0, 1], [0, 1, 0, 1, 0, 1], [0, 1, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1]]):
+        print("p_j_alpha_given_b for test case " +str(i + 1) + " : " + str(p_j_alpha_given_b(b, iteration)))
     
     print("\n*************************Solution for question 1 m *******************************")
     prediction_prob = [] 
