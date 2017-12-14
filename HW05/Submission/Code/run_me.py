@@ -1,12 +1,13 @@
 # Import modules
 import numpy as np
-from scipy import misc
-from sklearn.cluster import KMeans
-from sklearn.metrics import mean_squared_error
-import matplotlib.pyplot as plt
 import pickle
 import random
 import pprint
+from scipy import misc
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.metrics import mean_squared_error
+
 
 def read_scene():
 	data_x = misc.imread('../../Data/Scene/times_square.jpg')
@@ -44,6 +45,33 @@ def k_mean_clustering(k, flattened_image):
 def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
 
+def cov(data_x):
+	# shelper function to calculate the covariance matrix
+	# getting the eigen value and vector and ranking them
+	# Input is dataset
+	# output is eig vector ranked from highest to lowest eig value
+	cov = np.cov(data_x.T)
+	v, w =  np.linalg.eigh(cov)
+	
+	eig_rank = []
+	for i in range(len(v)):
+		eig_rank.append(((np.abs(v[i]), w[:,i])))
+	eig_rank.sort(key=lambda x: x[0], reverse=True)
+	return eig_rank
+
+def PCA(eig_rank, K):
+	# Helper function to return the reconstructed image
+	# takes the eig_rank and k 
+	# 
+	W = []
+	for k in range(K):
+		W.append(eig_rank[k][1])
+
+	W = np.array(W)
+	X_projected = data_x.dot(W.T)
+	X_recon = X_projected.dot(W)
+	return X_recon, X_projected, W
+
 if __name__ == '__main__':
 	
 	################################################
@@ -52,7 +80,28 @@ if __name__ == '__main__':
 	print('X = ', data_x.shape)
 
 	print('Implement PCA here ...')
-	
+
+	# Getting the Eigen value and eigen vector 
+	eig_rank = cov(data_x)
+	#getting the k best eigenvalues
+	K = [3,5,10,30,50,100,150,300]
+	recons_error = [["K", "Reconstruction Error", "Compression Rate"]]
+	f, ax = plt.subplots(3, 3)
+	ax = ax.ravel()
+	ax[0].imshow(data_x[1].reshape(50, 50))
+	ax[0].set_title("Original Photo", fontsize=6)
+	for i, k in enumerate( K):
+		X_recon, X_projected, W = PCA(eig_rank, k)
+		err = rmse(X_recon, data_x)
+		recons_error.append((k,err, (X_projected.nbytes + W.nbytes) / data_x.nbytes))
+		ax[i + 1].imshow(X_recon[1].reshape(50, 50))
+		ax[i + 1].set_title("Reconstructed Image for K: " + str(k), fontsize=6)
+	f.tight_layout()
+	f.savefig("../Figures/PCA.png")
+
+	print("*"*10 + "Average Squared Reconstruction Error and Compression Rate" + "*"*10)
+	pprint.pprint(recons_error)
+	"""
 	################################################
 	# K-Means
 
@@ -62,7 +111,6 @@ if __name__ == '__main__':
 	print('Flattened image = ', flattened_image.shape)
 	print('Implement k-means here ...')
 	K = [2 ,5,10 ,25,50,75 ,100,200]
-	"""
 	result = []
 	SSE = []
 	f, ax = plt.subplots(3, 3)
@@ -76,11 +124,8 @@ if __name__ == '__main__':
 		ax[int((i - i%3)/3), int(i - int(i/3)*3)].imshow(new_image)
 		ax[int((i - i%3)/3), int(i - int(i/3)*3)].set_title("Reconstructed image for k - " + str(k), fontsize = 6)
 	plt.tight_layout()
-	"""
-	"""
 	#plt.savefig("../Figures/Reconstructed_image.png")
 	#pickle.dump(result, open( "save" + str(random.random) + ".p", "wb" ) )
-	"""
 	recons_image = pickle.load( open( "save.p", "rb" ) )
 	recons_error = []
 	for i, k in enumerate(K):
@@ -94,10 +139,10 @@ if __name__ == '__main__':
 	print("*"*10 + "Compresseion Ratio"+ "*"*10)
 	for k in K:
 		pixels = data_x.shape[0] * data_x.shape[1]
-		tmp = (24*k + pixels*np.log2(k))/(24*pixels)  
+		tmp = (32*3*k + pixels*np.log2(k))/(24*pixels)  
 		print("For K equals: " + str(k) + " compression ratio is: "  + str(tmp))
 	
-	# Just having it here so that I dont have to open 
+	# Just having it here so that I dont have to run the k mean everytime
 	SSE = [19.364452852413656, 18.284265383653125, 17.592396941810147, 16.774010174561404, 16.223725553550821, 15.9212126963522, 15.706185410704739, 15.233038289366752]
 	print("*"*10 + "Elbow Graph" + "*"*10)
 	plt.scatter(K, SSE, c='r')
@@ -106,7 +151,7 @@ if __name__ == '__main__':
 	plt.xlabel("Number of cluster (k)")
 	plt.title("Sum of Squared Error of Each Pixel from Centroids")
 	plt.savefig("../Figures/kmeanElbow.png")
-	plt.show()
 
 	reconstructed_image = flattened_image.ravel().reshape(data_x.shape[0], data_x.shape[1], data_x.shape[2])
 	print('Reconstructed image = ', reconstructed_image.shape)
+	"""
